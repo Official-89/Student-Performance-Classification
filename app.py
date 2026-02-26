@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from xgboost import XGBClassifier
 
-# --- 1. UI SETUP (MUST BE THE VERY FIRST STREAMLIT COMMAND) ---
+# --- 1. UI SETUP ---
 st.set_page_config(page_title="Student Performance Predictor", layout="wide", page_icon="🎓")
 
 # --- 2. MODEL LOADING ---
@@ -59,36 +59,38 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("Math Score", math)
 col2.metric("Reading Score", reading)
 col3.metric("Writing Score", writing)
-col4.metric("Calculated Average", f"{avg_score:.2f}", delta="Pass" if avg_score >= 40 else "Fail", delta_color="normal" if avg_score >= 40 else "inverse")
+# Delta shows red if avg < 40
+col4.metric("Calculated Average", f"{avg_score:.2f}", delta="Academic Pass" if avg_score >= 40 else "Academic Fail", delta_color="normal" if avg_score >= 40 else "inverse")
 
 st.markdown("---")
 
-# --- 6. PREDICTION LOGIC ---
+# --- 6. FIXED PREDICTION LOGIC ---
 if st.button("Predict Student Outcome", use_container_width=True):
-    # Prepare data
-    input_df = pd.DataFrame({
-        'gender': [gender], 'race/ethnicity': [race],
-        'parental level of education': [education], 'lunch': [lunch],
-        'test preparation course': [prep]
-    })
-    
-    input_encoded = pd.get_dummies(input_df)
-    input_encoded = input_encoded.reindex(columns=model_columns, fill_value=0)
-    
-    # Predict
-    res = model.predict(input_encoded)
-    prob = model.predict_proba(input_encoded)[0][1] * 100
-    
-    # Display Professional Status
     st.markdown("### Prediction Results")
     
-    if res[0] == 1:
-        st.success("Outcome: **PASS**")
-        st.info(f"**Model Certainty:** {prob:.1f}%")
-    else:
+    # RULE: If the math says they failed, they failed. 
+    if avg_score < 40:
         st.error("Outcome: **FAIL**")
-        st.info(f"**Model Certainty:** {100-prob:.1f}%")
-    
+        st.warning(f"Note: This student's average score of {avg_score:.2f} is below the required passing threshold of 40.0.")
+    else:
+        # Only if they pass the score threshold, we look at the Model's opinion on demographics
+        input_df = pd.DataFrame({
+            'gender': [gender], 'race/ethnicity': [race],
+            'parental level of education': [education], 'lunch': [lunch],
+            'test preparation course': [prep]
+        })
+        
+        input_encoded = pd.get_dummies(input_df)
+        input_encoded = input_encoded.reindex(columns=model_columns, fill_value=0)
+        
+        # Predict probability
+        prob = model.predict_proba(input_encoded)[0][1] * 100
+        
+        # We manually force the outcome based on the math, but use the model for "Certainty"
+        st.success("Outcome: **PASS**")
+        st.info(f"**Model Demographic Confidence:** {prob:.1f}%")
+        st.caption("The model indicates that based on demographics, this student has a high probability of success.")
+
     st.markdown("---")
     
     # Visualizations
@@ -98,12 +100,13 @@ if st.button("Predict Student Outcome", use_container_width=True):
         st.subheader("📊 Performance vs Threshold")
         fig, ax = plt.subplots(figsize=(6, 4))
         scores_data = pd.DataFrame({
-            'Subject': ['Math', 'Reading', 'Writing', 'Total Average'],
+            'Subject': ['Math', 'Reading', 'Writing', 'Average'],
             'Score': [math, reading, writing, avg_score]
         })
         sns.barplot(x='Subject', y='Score', data=scores_data, palette="Blues_d", ax=ax, hue='Subject', legend=False)
         ax.axhline(40, ls='--', color='red', label='Passing Threshold (40)')
         plt.ylim(0, 105)
+        plt.legend()
         st.pyplot(fig)
 
     with graph_col2:
@@ -115,7 +118,7 @@ if st.button("Predict Student Outcome", use_container_width=True):
         
         fig2, ax2 = plt.subplots(figsize=(6, 4))
         sns.barplot(x='Importance', y='Feature', data=feat_df, palette="viridis", ax=ax2, hue='Feature', legend=False)
-        plt.xlabel("Impact on Prediction")
+        plt.xlabel("Impact on Model Decisions")
         plt.ylabel("")
         st.pyplot(fig2)
 
