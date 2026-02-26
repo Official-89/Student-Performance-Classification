@@ -4,6 +4,20 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from xgboost import XGBClassifier
 
+# --- UI SETUP MUST BE THE VERY FIRST STREAMLIT COMMAND ---
+st.set_page_config(page_title="Student Performance Predictor", layout="wide", page_icon="🎓")
+
+# --- MODEL LOADING (Optimized) ---
+@st.cache_resource 
+def load_model():
+    model = XGBClassifier()
+    model.load_model('student_performance_model.json')
+    return model
+
+model = load_model()
+
+# ... (the rest of your code stays exactly the same) ...
+
 # --- MODEL LOADING (Optimized) ---
 # st.cache_resource ensures the model only loads once, making the app much faster!
 @st.cache_resource 
@@ -137,4 +151,5 @@ with st.expander("🤝 Meet the Project Team"):
     | **SNEHA MAITY** | 2401020422 |
     | **SRINJONI MAPDAR** | 2401020421 |
     | **MEDHA ROY GUPTA** | 2401020517 |
+
     """)
