@@ -47,4 +47,5 @@ If you want to run this application on your own machine:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/YOUR_GITHUB_USERNAME/Student-Performance-Classification.git](https://github.com/YOUR_GITHUB_USERNAME/Student-Performance-Classification.git)
+
+   git clone https://github.com/Official-89/Student-Performance-Classification.git
