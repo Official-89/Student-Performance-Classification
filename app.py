@@ -114,4 +114,21 @@ if st.button("Predict Student Outcome", use_container_width=True):
         feat_df['Feature'] = feat_df['Feature'].str.replace('_', ': ').str.title()
         
         fig2, ax2 = plt.subplots(figsize=(6, 4))
-        sns.barplot(x='Importance', y='Feature',
+        sns.barplot(x='Importance', y='Feature', data=feat_df, palette="viridis", ax=ax2, hue='Feature', legend=False)
+        plt.xlabel("Impact on Prediction")
+        plt.ylabel("")
+        st.pyplot(fig2)
+
+# --- 7. TEAM EXPANDER ---
+st.markdown("---")
+with st.expander("🤝 Meet the Project Team"):
+    st.markdown("""
+| NAME | REG NO. |
+| :--- | :--- |
+| **HARSH SINGH** | 2401020462 |
+| **ABHI RAJ** | 2401020434 |
+| **AASTHA SINHA** | 2401020439 |
+| **SNEHA MAITY** | 2401020422 |
+| **SRINJONI MAPDAR** | 2401020421 |
+| **MEDHA ROY GUPTA** | 2401020517 |
+""")
