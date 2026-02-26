@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from xgboost import XGBClassifier
 
-# --- UI SETUP MUST BE THE VERY FIRST STREAMLIT COMMAND ---
+# --- 1. UI SETUP (MUST BE THE VERY FIRST STREAMLIT COMMAND) ---
 st.set_page_config(page_title="Student Performance Predictor", layout="wide", page_icon="🎓")
 
-# --- MODEL LOADING (Optimized) ---
+# --- 2. MODEL LOADING ---
 @st.cache_resource 
 def load_model():
     model = XGBClassifier()
@@ -16,19 +16,7 @@ def load_model():
 
 model = load_model()
 
-# ... (the rest of your code stays exactly the same) ...
-
-# --- MODEL LOADING (Optimized) ---
-# st.cache_resource ensures the model only loads once, making the app much faster!
-@st.cache_resource 
-def load_model():
-    model = XGBClassifier()
-    model.load_model('student_performance_model.json')
-    return model
-
-model = load_model()
-
-# Define the exact columns from your training data
+# --- 3. MODEL COLUMNS ---
 model_columns = [
     'gender_female', 'gender_male', 
     'race/ethnicity_group A', 'race/ethnicity_group B', 'race/ethnicity_group C', 'race/ethnicity_group D', 'race/ethnicity_group E',
@@ -39,10 +27,7 @@ model_columns = [
     'test preparation course_completed', 'test preparation course_none'
 ]
 
-# --- UI SETUP ---
-st.set_page_config(page_title="Student Performance Predictor", layout="wide", page_icon="🎓")
-
-# --- IMPROVEMENT 1: SIDEBAR FOR INPUTS ---
+# --- 4. SIDEBAR INPUTS ---
 st.sidebar.title("⚙️ Input Parameters")
 st.sidebar.write("Adjust the student details below:")
 
@@ -64,22 +49,21 @@ prep = st.sidebar.selectbox("Test Prep Course", ["none", "completed"])
 # Calculate Average
 avg_score = (math + reading + writing) / 3
 
-# --- MAIN DASHBOARD AREA ---
+# --- 5. MAIN DASHBOARD ---
 st.title("🎓 Student Academic Success Predictor")
 st.markdown("Predict student outcomes and understand the driving factors using our XGBoost Classification Pipeline.")
 
-# --- IMPROVEMENT 3: KPI METRICS ---
+# KPI Metrics
 st.subheader("Current Academic Standing")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Math Score", math)
 col2.metric("Reading Score", reading)
 col3.metric("Writing Score", writing)
-# The delta shows green for passing and red for failing automatically!
 col4.metric("Calculated Average", f"{avg_score:.2f}", delta="Pass" if avg_score >= 40 else "Fail", delta_color="normal" if avg_score >= 40 else "inverse")
 
 st.markdown("---")
 
-# Prediction Execution
+# --- 6. PREDICTION LOGIC ---
 if st.button("Predict Student Outcome", use_container_width=True):
     # Prepare data
     input_df = pd.DataFrame({
@@ -98,12 +82,13 @@ if st.button("Predict Student Outcome", use_container_width=True):
     # Display Status
     if res[0] == 1:
         st.success(f"### 🎯 Model Prediction: PASS (Confidence: {prob:.2f}%)")
+        st.balloons() # Confetti!
     else:
         st.error(f"### 🎯 Model Prediction: FAIL (Confidence: {100-prob:.2f}%)")
     
     st.markdown("---")
     
-    # Create two columns for side-by-side graphs
+    # Visualizations
     graph_col1, graph_col2 = st.columns(2)
     
     with graph_col1:
@@ -116,21 +101,13 @@ if st.button("Predict Student Outcome", use_container_width=True):
         sns.barplot(x='Subject', y='Score', data=scores_data, palette="Blues_d", ax=ax, hue='Subject', legend=False)
         ax.axhline(40, ls='--', color='red', label='Passing Threshold (40)')
         plt.ylim(0, 105)
-        plt.legend()
         st.pyplot(fig)
 
-    # --- IMPROVEMENT 2: MODEL EXPLAINABILITY ---
     with graph_col2:
         st.subheader("🧠 Feature Importance")
-        st.write("What demographic factors matter most to the model?")
-        
-        # Extract feature importances directly from the XGBoost model
         importances = model.feature_importances_
         feat_df = pd.DataFrame({'Feature': model_columns, 'Importance': importances})
-        
-        # Get the top 5 most important features
         feat_df = feat_df.sort_values(by='Importance', ascending=False).head(5)
-        # Clean up names for a prettier graph
         feat_df['Feature'] = feat_df['Feature'].str.replace('_', ': ').str.title()
         
         fig2, ax2 = plt.subplots(figsize=(6, 4))
@@ -139,7 +116,7 @@ if st.button("Predict Student Outcome", use_container_width=True):
         plt.ylabel("")
         st.pyplot(fig2)
 
-# --- IMPROVEMENT 4: TEAM EXPANDER ---
+# --- 7. TEAM EXPANDER ---
 st.markdown("---")
 with st.expander("🤝 Meet the Project Team"):
     st.markdown("""
@@ -151,5 +128,4 @@ with st.expander("🤝 Meet the Project Team"):
     | **SNEHA MAITY** | 2401020422 |
     | **SRINJONI MAPDAR** | 2401020421 |
     | **MEDHA ROY GUPTA** | 2401020517 |
-
     """)
