@@ -79,12 +79,15 @@ if st.button("Predict Student Outcome", use_container_width=True):
     res = model.predict(input_encoded)
     prob = model.predict_proba(input_encoded)[0][1] * 100
     
-    # Display Status
+    # Display Professional Status
+    st.markdown("### Prediction Results")
+    
     if res[0] == 1:
-        st.success(f"### 🎯 Model Prediction: PASS (Confidence: {prob:.2f}%)")
-        st.balloons() # Confetti!
+        st.success("Outcome: **PASS**")
+        st.info(f"**Model Certainty:** {prob:.1f}%")
     else:
-        st.error(f"### 🎯 Model Prediction: FAIL (Confidence: {100-prob:.2f}%)")
+        st.error("Outcome: **FAIL**")
+        st.info(f"**Model Certainty:** {100-prob:.1f}%")
     
     st.markdown("---")
     
@@ -121,11 +124,3 @@ st.markdown("---")
 with st.expander("🤝 Meet the Project Team"):
     st.markdown("""
     | NAME | REG NO. |
-    | :--- | :--- |
-    | **HARSH SINGH** | 2401020462 |
-    | **ABHI RAJ** | 2401020434 |
-    | **AASTHA SINHA** | 2401020439 |
-    | **SNEHA MAITY** | 2401020422 |
-    | **SRINJONI MAPDAR** | 2401020421 |
-    | **MEDHA ROY GUPTA** | 2401020517 |
-    """)
