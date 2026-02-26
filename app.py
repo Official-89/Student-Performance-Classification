@@ -1,0 +1,140 @@
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from xgboost import XGBClassifier
+
+# --- MODEL LOADING (Optimized) ---
+# st.cache_resource ensures the model only loads once, making the app much faster!
+@st.cache_resource 
+def load_model():
+    model = XGBClassifier()
+    model.load_model('student_performance_model.json')
+    return model
+
+model = load_model()
+
+# Define the exact columns from your training data
+model_columns = [
+    'gender_female', 'gender_male', 
+    'race/ethnicity_group A', 'race/ethnicity_group B', 'race/ethnicity_group C', 'race/ethnicity_group D', 'race/ethnicity_group E',
+    'parental level of education_associate\'s degree', 'parental level of education_bachelor\'s degree', 
+    'parental level of education_high school', 'parental level of education_master\'s degree', 
+    'parental level of education_some college', 'parental level of education_some high school',
+    'lunch_free/reduced', 'lunch_standard', 
+    'test preparation course_completed', 'test preparation course_none'
+]
+
+# --- UI SETUP ---
+st.set_page_config(page_title="Student Performance Predictor", layout="wide", page_icon="🎓")
+
+# --- IMPROVEMENT 1: SIDEBAR FOR INPUTS ---
+st.sidebar.title("⚙️ Input Parameters")
+st.sidebar.write("Adjust the student details below:")
+
+math = st.sidebar.slider("Math Score", 0, 100, 50)
+reading = st.sidebar.slider("Reading Score", 0, 100, 50)
+writing = st.sidebar.slider("Writing Score", 0, 100, 50)
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("Demographics")
+gender = st.sidebar.selectbox("Gender", ["female", "male"])
+race = st.sidebar.selectbox("Race/Ethnicity", ["group A", "group B", "group C", "group D", "group E"])
+education = st.sidebar.selectbox("Parental Education", [
+    "some high school", "high school", "some college", 
+    "associate's degree", "bachelor's degree", "master's degree"
+])
+lunch = st.sidebar.selectbox("Lunch Type", ["standard", "free/reduced"])
+prep = st.sidebar.selectbox("Test Prep Course", ["none", "completed"])
+
+# Calculate Average
+avg_score = (math + reading + writing) / 3
+
+# --- MAIN DASHBOARD AREA ---
+st.title("🎓 Student Academic Success Predictor")
+st.markdown("Predict student outcomes and understand the driving factors using our XGBoost Classification Pipeline.")
+
+# --- IMPROVEMENT 3: KPI METRICS ---
+st.subheader("Current Academic Standing")
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Math Score", math)
+col2.metric("Reading Score", reading)
+col3.metric("Writing Score", writing)
+# The delta shows green for passing and red for failing automatically!
+col4.metric("Calculated Average", f"{avg_score:.2f}", delta="Pass" if avg_score >= 40 else "Fail", delta_color="normal" if avg_score >= 40 else "inverse")
+
+st.markdown("---")
+
+# Prediction Execution
+if st.button("Predict Student Outcome", use_container_width=True):
+    # Prepare data
+    input_df = pd.DataFrame({
+        'gender': [gender], 'race/ethnicity': [race],
+        'parental level of education': [education], 'lunch': [lunch],
+        'test preparation course': [prep]
+    })
+    
+    input_encoded = pd.get_dummies(input_df)
+    input_encoded = input_encoded.reindex(columns=model_columns, fill_value=0)
+    
+    # Predict
+    res = model.predict(input_encoded)
+    prob = model.predict_proba(input_encoded)[0][1] * 100
+    
+    # Display Status
+    if res[0] == 1:
+        st.success(f"### 🎯 Model Prediction: PASS (Confidence: {prob:.2f}%)")
+    else:
+        st.error(f"### 🎯 Model Prediction: FAIL (Confidence: {100-prob:.2f}%)")
+    
+    st.markdown("---")
+    
+    # Create two columns for side-by-side graphs
+    graph_col1, graph_col2 = st.columns(2)
+    
+    with graph_col1:
+        st.subheader("📊 Performance vs Threshold")
+        fig, ax = plt.subplots(figsize=(6, 4))
+        scores_data = pd.DataFrame({
+            'Subject': ['Math', 'Reading', 'Writing', 'Total Average'],
+            'Score': [math, reading, writing, avg_score]
+        })
+        sns.barplot(x='Subject', y='Score', data=scores_data, palette="Blues_d", ax=ax, hue='Subject', legend=False)
+        ax.axhline(40, ls='--', color='red', label='Passing Threshold (40)')
+        plt.ylim(0, 105)
+        plt.legend()
+        st.pyplot(fig)
+
+    # --- IMPROVEMENT 2: MODEL EXPLAINABILITY ---
+    with graph_col2:
+        st.subheader("🧠 Feature Importance")
+        st.write("What demographic factors matter most to the model?")
+        
+        # Extract feature importances directly from the XGBoost model
+        importances = model.feature_importances_
+        feat_df = pd.DataFrame({'Feature': model_columns, 'Importance': importances})
+        
+        # Get the top 5 most important features
+        feat_df = feat_df.sort_values(by='Importance', ascending=False).head(5)
+        # Clean up names for a prettier graph
+        feat_df['Feature'] = feat_df['Feature'].str.replace('_', ': ').str.title()
+        
+        fig2, ax2 = plt.subplots(figsize=(6, 4))
+        sns.barplot(x='Importance', y='Feature', data=feat_df, palette="viridis", ax=ax2, hue='Feature', legend=False)
+        plt.xlabel("Impact on Prediction")
+        plt.ylabel("")
+        st.pyplot(fig2)
+
+# --- IMPROVEMENT 4: TEAM EXPANDER ---
+st.markdown("---")
+with st.expander("🤝 Meet the Project Team"):
+    st.markdown("""
+    | NAME | REG NO. |
+    | :--- | :--- |
+    | **HARSH SINGH** | 2401020462 |
+    | **ABHI RAJ** | 2401020434 |
+    | **AASTHA SINHA** | 2401020439 |
+    | **SNEHA MAITY** | 2401020422 |
+    | **SRINJONI MAPDAR** | 2401020421 |
+    | **MEDHA ROY GUPTA** | 2401020517 |
+    """)
