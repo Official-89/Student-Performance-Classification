@@ -1,3 +1,4 @@
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Official-89/Student-Performance-Classification/blob/main/Academic_Performance_Classification.ipynb)
 # 🎓 Student Academic Success Predictor
 
 ### 🚀 [Launch the Live Predictor UI](https://student-performance-classification-wem3abymftd2ftghajaofg.streamlit.app/)
@@ -49,3 +50,4 @@ If you want to run this application on your own machine:
    ```bash
 
    git clone https://github.com/Official-89/Student-Performance-Classification.git
+
