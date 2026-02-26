@@ -5,4 +5,4 @@ xgboost
 streamlit
 matplotlib
 seaborn
-altair
+altair<5
